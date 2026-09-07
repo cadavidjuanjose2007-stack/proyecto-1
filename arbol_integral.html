@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El árbol que guarda la integral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board:#24382f; --board-deep:#1b2b24;
+  --chalk:#f0f4e8; --dim:rgba(240,244,232,.58); --faint:rgba(240,244,232,.20);
+  --yellow:#f4d06f; --cyan:#9adcd8; --salmon:#ef9a80; --violet:#c9a7e8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(120% 80% at 20% 10%, rgba(255,255,255,.045) 0%, transparent 55%),
+    radial-gradient(90% 70% at 85% 90%, rgba(255,255,255,.035) 0%, transparent 60%),
+    radial-gradient(140% 120% at 50% 50%, var(--board) 0%, var(--board-deep) 100%);
+  color:var(--chalk);
+  font-family:'Patrick Hand', system-ui, sans-serif;
+  font-size:17px; line-height:1.65;
+  min-height:100vh; padding:clamp(14px,2.5vw,36px);
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background:
+    radial-gradient(3px 2px at 12% 22%, rgba(255,255,255,.10), transparent 60%),
+    radial-gradient(2px 2px at 62% 12%, rgba(255,255,255,.08), transparent 60%),
+    radial-gradient(4px 3px at 82% 62%, rgba(255,255,255,.06), transparent 60%),
+    radial-gradient(3px 2px at 32% 78%, rgba(255,255,255,.07), transparent 60%);
+}
+.wrap{max-width:1080px;margin:0 auto;position:relative}
+h1{font-family:'Caveat',cursive;font-weight:600;font-size:clamp(32px,5vw,54px);text-align:center;margin:0 0 4px}
+.sub{text-align:center;color:var(--dim);margin:0 0 6px;font-size:clamp(15px,1.7vw,20px)}
+.byline{text-align:center;color:var(--faint);font-size:14px;margin:0 0 26px}
+h2{font-family:'Caveat',cursive;font-weight:600;font-size:clamp(25px,3.4vw,36px);margin:44px 0 6px;color:var(--yellow)}
+h3{font-family:'Caveat',cursive;font-weight:600;font-size:clamp(21px,2.4vw,27px);margin:26px 0 4px;color:var(--cyan)}
+p{margin:0 0 14px}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--faint) 12%,var(--faint) 88%,transparent);margin:22px 0}
+.eq{font-family:'Caveat',cursive;font-size:clamp(21px,2.4vw,29px);text-align:center;margin:18px 0;color:var(--chalk)}
+.cy{color:var(--cyan)} .ye{color:var(--yellow)} .sa{color:var(--salmon)} .vi{color:var(--violet)}
+.dimt{color:var(--dim)}
+.note{border-left:2px solid var(--faint);padding:2px 0 2px 16px;margin:18px 0;color:var(--dim)}
+figure{margin:22px 0}
+figcaption{color:var(--dim);font-size:15px;text-align:center;margin-top:8px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.panel{border:1px dashed var(--faint);border-radius:4px;padding:14px 16px;background:rgba(255,255,255,.028);margin:18px 0}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px}
+.ctrls label{color:var(--dim);font-size:15px}
+input[type=range]{accent-color:var(--yellow);width:150px;vertical-align:middle}
+button{font-family:'Patrick Hand';font-size:16px;color:var(--chalk);background:rgba(255,255,255,.05);
+  border:1px dashed var(--faint);border-radius:3px;padding:5px 12px;cursor:pointer}
+button:hover{background:rgba(255,255,255,.12)}
+button.on{border-color:var(--yellow);color:var(--yellow)}
+b.val{font-family:'Caveat',cursive;font-size:24px;color:var(--yellow);font-weight:600}
+pre{font-family:ui-monospace,Consolas,monospace;font-size:13.5px;line-height:1.55;
+  background:rgba(0,0,0,.22);border:1px solid var(--faint);border-radius:4px;
+  padding:14px 16px;overflow-x:auto;color:#e6efe2;margin:14px 0}
+pre .k{color:var(--yellow)} pre .c{color:rgba(240,244,232,.45)} pre .s{color:var(--cyan)}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:16px}
+th,td{border:1px solid var(--faint);padding:8px 12px;text-align:left}
+th{color:var(--yellow);font-family:'Caveat';font-size:21px;font-weight:600}
+.readout{display:flex;gap:22px;flex-wrap:wrap;color:var(--dim);font-size:15px;margin-top:8px}
+.readout b{font-family:'Caveat';font-size:23px;color:var(--chalk);font-weight:600}
+ul{margin:0 0 14px;padding-left:22px} li{margin-bottom:6px}
+.foot{text-align:center;color:var(--faint);font-size:14px;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>El árbol que guarda la integral</h1>
+<p class="sub">Árboles de segmentos y sumas de Riemann: por qué cada nodo es un área parcial</p>
+<p class="byline">Alexander Narváez · material de apoyo</p>
+
+<div class="rule"></div>
+
+<h2>1. De dónde venimos</h2>
+<p>Tenemos una imagen binaria y, de cada columna, sacamos una altura. El resultado es un arreglo de enteros:</p>
+<div class="eq">M = [ f(0), f(1), f(2), … , f(n−1) ]</div>
+<p>Como cada columna mide un píxel de ancho, el área bajo la curva es simplemente la suma de ese arreglo:</p>
+<div class="eq">A = <span class="ye">Σ</span> f(x<sub>i</sub>) · Δx &nbsp;&nbsp;<span class="dimt">con Δx = 1</span></div>
+<p>Sumar un arreglo cuesta O(n) y no hay nada que mejorar si solo queremos el total <em>una vez</em>. La pregunta interesante aparece cuando queremos otra cosa: <span class="cy">el área de un tramo cualquiera</span>, muchas veces, o poder modificar la curva y volver a preguntar.</p>
+
+<h2>2. La propiedad que lo permite todo</h2>
+<p>La integral es aditiva sobre intervalos. Si partes el dominio en dos, las dos partes suman el total:</p>
+<div class="eq">∫<sub>a</sub><sup>c</sup> f = ∫<sub>a</sub><sup>b</sup> f + ∫<sub>b</sub><sup>c</sup> f</div>
+<p>Esa igualdad, leída como estructura de datos en vez de como teorema, <em>es</em> un árbol binario. Un nodo guarda el área de su intervalo; sus dos hijos guardan las áreas de las mitades. No hay más idea que esa en todo el documento.</p>
+
+<h3>Cómo se construye, paso a paso</h3>
+<p>Antes de mirar el árbol terminado conviene verlo armarse. Sigue los pasos: primero la imagen con sus columnas, después el vector de alturas, y por último el árbol levantándose desde las hojas.</p>
+
+<div class="panel">
+  <div class="ctrls">
+    <button id="bPrev">◀ atrás</button>
+    <button id="bNext" class="on">siguiente ▶</button>
+    <button id="bReset">reiniciar</button>
+    <span class="dimt">paso <b class="val" id="bStep">0</b> de 6</span>
+  </div>
+  <figure id="figBuild" style="margin:6px 0 0"></figure>
+  <p id="bNarr" style="margin:10px 2px 0;min-height:52px"></p>
+</div>
+<figcaption style="margin-top:-6px">Figura 1. Construcción del árbol desde la imagen. Aquí la raíz queda <em>abajo</em> porque se construye de las hojas hacia arriba; en la Figura 2 aparece en su orientación habitual, con la raíz arriba.</figcaption>
+
+<figure id="figTree"></figure>
+<figcaption>Figura 2. Árbol de segmentos sobre M = [3, 5, 6, 8, 9, 9, 8, 6]. Cada nodo guarda la suma de su intervalo: la raíz es el área total, las hojas son las columnas individuales.</figcaption>
+
+<div class="note">Fíjate en la lectura doble de cada nodo: como <span class="cy">dato</span> es una suma almacenada; como <span class="ye">matemática</span> es una integral definida sobre un subintervalo. El árbol no calcula la integral — la guarda descompuesta.</div>
+
+<h2>3. Cada nivel es una suma de Riemann distinta</h2>
+<p>Aquí está lo que a mí me parece lo más bonito de la estructura. Si en cada nodo de un nivel usas la <em>altura promedio</em> de su intervalo, obtienes una aproximación rectangular de la curva. Y cada nivel del árbol es una aproximación con distinto Δx.</p>
+
+<div class="panel">
+  <div class="ctrls">
+    <label for="lvl">nivel del árbol</label>
+    <input type="range" id="lvl" min="0" max="3" value="1">
+    <b class="val" id="lvlV">1</b>
+    <span class="dimt">→ <b class="val" id="rectV">2</b> rectángulos, Δx = <b class="val" id="dxV">4</b></span>
+  </div>
+  <figure id="figLevels" style="margin:6px 0 0"></figure>
+  <div class="readout">
+    <span>Área exacta <b>54</b></span>
+    <span>Área del nivel <b id="areaV">54</b></span>
+    <span>Error de forma <b id="errV">—</b></span>
+  </div>
+</div>
+<figcaption style="margin-top:-6px">Figura 3. Bajar un nivel en el árbol es duplicar n en la suma de Riemann. La suma total nunca cambia — lo que cambia es cuánta forma se conserva.</figcaption>
+
+<p>Un detalle que conviene decir en voz alta: <span class="ye">el área total es la misma en todos los niveles</span>. Lo que mejora al descender no es el valor de la integral, sino la fidelidad del perfil. El árbol conserva la suma exacta en cada nivel y va revelando la forma poco a poco.</p>
+
+<h2>4. Consulta de un tramo: por qué O(log n)</h2>
+<p>La pregunta que el arreglo plano contesta mal: <em>¿cuánta área hay entre x = 2 y x = 7?</em> Con el arreglo hay que recorrer las columnas una por una. Con el árbol, basta con encontrar un puñado de nodos cuyos intervalos, juntos, cubran exactamente el tramo pedido.</p>
+
+<div class="panel">
+  <div class="ctrls">
+    <label for="ql">desde x =</label>
+    <input type="range" id="ql" min="0" max="7" value="2"><b class="val" id="qlV">2</b>
+    <label for="qr">hasta x =</label>
+    <input type="range" id="qr" min="1" max="8" value="7"><b class="val" id="qrV">7</b>
+  </div>
+  <figure id="figQuery" style="margin:6px 0 0"></figure>
+  <div class="readout">
+    <span>Área del tramo <b id="qArea">—</b></span>
+    <span>Nodos usados <b id="qNodes">—</b></span>
+    <span>Columnas que habría sumado el arreglo <b id="qCols">—</b></span>
+  </div>
+</div>
+<figcaption style="margin-top:-6px">Figura 4. Descomposición canónica del intervalo. Los nodos <span class="ye">amarillos</span> son los que se suman; los <span class="cy">cian</span> son los que se visitan para llegar a ellos. Nunca hacen falta más de 2·log₂(n).</figcaption>
+
+<p>La garantía es geométrica, no empírica: en cada nivel del árbol, a lo sumo dos nodos quedan “a medias” en el borde del intervalo pedido. Como hay log₂(n) niveles, el total de nodos sumados está acotado por 2·log₂(n). Con n = 1000 columnas, cualquier tramo se responde con unos veinte nodos en vez de mil sumas.</p>
+
+<h2>5. Modificar una columna</h2>
+<p>Si cambia f(x) en una sola posición, solo dejan de ser válidos los nodos que contienen esa posición — y esos forman exactamente <em>un camino</em> desde la hoja hasta la raíz.</p>
+
+<div class="panel">
+  <div class="ctrls">
+    <label for="upd">cambiar la columna x =</label>
+    <input type="range" id="upd" min="0" max="7" value="5"><b class="val" id="updV">5</b>
+    <span class="dimt">→ se recalculan <b class="val" id="updN">4</b> nodos de 15</span>
+  </div>
+  <figure id="figUpdate" style="margin:6px 0 0"></figure>
+</div>
+<figcaption style="margin-top:-6px">Figura 5. Actualización puntual. Todo lo demás del árbol sigue siendo válido y ni se toca.</figcaption>
+
+<h2>6. Poda: de aquí sale la cuadratura adaptativa</h2>
+<p>Hasta ahora el árbol se construye completo. Pero hay una pregunta natural: <em>¿vale la pena descender por todas las ramas?</em></p>
+<p>Si dentro de un nodo la curva es casi plana, sus dos hijos no aportan información nueva: el rectángulo del padre ya describe bien esa zona. Si en cambio la curva cambia mucho dentro del nodo, descender sí paga.</p>
+<div class="eq"><span class="dimt">criterio de poda:</span> | izquierda − derecha | &lt; ε &nbsp;→&nbsp; no descender</div>
+<p>Un árbol construido con esa regla es <span class="cy">profundo donde la curva se mueve y superficial donde es plana</span>. Eso es exactamente lo que hacen los métodos de <strong>cuadratura adaptativa</strong> reales — los que están dentro de <code>scipy.integrate.quad</code> o de las rutinas QUADPACK. Concentran el esfuerzo donde el integrando lo exige.</p>
+<div class="note">Aquí el árbol deja de ser una estructura de almacenamiento y se vuelve una <em>estrategia de refinamiento</em>. Es el mismo objeto respondiendo otra pregunta.</div>
+
+<h2>7. El código</h2>
+
+<h3>Haskell — el árbol como tipo algebraico</h3>
+<p>En un lenguaje funcional el árbol de segmentos no es una técnica: es la forma natural del tipo. La suma es un <code>fold</code> sobre esa forma.</p>
+<pre><span class="c">-- cada nodo guarda la suma de su intervalo</span>
+<span class="k">data</span> Seg = Hoja Int
+         | Nodo Int Seg Seg
+
+suma :: Seg -&gt; Int
+suma (Hoja v)     = v
+suma (Nodo s _ _) = s
+
+<span class="c">-- construccion: O(n)</span>
+construir :: [Int] -&gt; Seg
+construir [x] = Hoja x
+construir xs  = Nodo (suma i + suma d) i d
+  <span class="k">where</span> (a, b) = splitAt (length xs `div` 2) xs
+        i      = construir a
+        d      = construir b
+
+<span class="c">-- consulta del area en [l, r): O(log n)</span>
+consulta :: Seg -&gt; (Int, Int) -&gt; (Int, Int) -&gt; Int
+consulta t (a, b) (l, r)
+  | r &lt;= a || b &lt;= l = 0          <span class="c">-- disjunto</span>
+  | l &lt;= a &amp;&amp; b &lt;= r = suma t      <span class="c">-- contenido</span>
+  | <span class="k">otherwise</span>        = <span class="k">case</span> t <span class="k">of</span>
+      Hoja v     -&gt; v
+      Nodo _ i d -&gt; <span class="k">let</span> m = (a + b) `div` 2
+                    <span class="k">in</span>  consulta i (a, m) (l, r)
+                      + consulta d (m, b) (l, r)
+
+<span class="c">-- el area total es la raiz</span>
+area :: [Int] -&gt; Int
+area = suma . construir</pre>
+
+<h3>C++ — el árbol como arreglo</h3>
+<p>La versión imperativa clásica no usa punteros: mete el árbol dentro de un arreglo, donde el hijo izquierdo del nodo <code>k</code> es <code>2k</code> y el derecho <code>2k+1</code>.</p>
+<pre><span class="k">struct</span> SegTree {
+    <span class="k">int</span> n;
+    vector&lt;<span class="k">long long</span>&gt; t;
+
+    SegTree(<span class="k">const</span> vector&lt;<span class="k">int</span>&gt;&amp; M) : n(M.size()), t(<span class="s">2</span> * M.size()) {
+        <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; n; i++) t[n + i] = M[i];      <span class="c">// hojas</span>
+        <span class="k">for</span> (<span class="k">int</span> k = n - <span class="s">1</span>; k &gt; <span class="s">0</span>; k--) t[k] = t[<span class="s">2</span>*k] + t[<span class="s">2</span>*k+<span class="s">1</span>];
+    }
+
+    <span class="c">// area en [l, r)</span>
+    <span class="k">long long</span> consulta(<span class="k">int</span> l, <span class="k">int</span> r) {
+        <span class="k">long long</span> s = <span class="s">0</span>;
+        <span class="k">for</span> (l += n, r += n; l &lt; r; l /= <span class="s">2</span>, r /= <span class="s">2</span>) {
+            <span class="k">if</span> (l &amp; <span class="s">1</span>) s += t[l++];
+            <span class="k">if</span> (r &amp; <span class="s">1</span>) s += t[--r];
+        }
+        <span class="k">return</span> s;
+    }
+
+    <span class="c">// cambiar f(x) y reparar el camino hasta la raiz</span>
+    <span class="k">void</span> actualizar(<span class="k">int</span> x, <span class="k">int</span> valor) {
+        <span class="k">for</span> (t[x += n] = valor; x &gt; <span class="s">1</span>; x /= <span class="s">2</span>)
+            t[x/<span class="s">2</span>] = t[x] + t[x^<span class="s">1</span>];
+    }
+};</pre>
+
+<h3>Prolog — el árbol como relación</h3>
+<p>En lógica no se construye el árbol: se declara qué relación debe cumplirse entre un intervalo y su área.</p>
+<pre><span class="c">% area(+M, +Desde, +Hasta, -Area)</span>
+area(_, L, L, <span class="s">0</span>) :- !.
+area(M, L, R, Area) :-
+    R <span class="k">is</span> L + <span class="s">1</span>, !,
+    nth0(L, M, Area).
+area(M, L, R, Area) :-
+    Medio <span class="k">is</span> (L + R) // <span class="s">2</span>,
+    area(M, L, Medio, Izq),
+    area(M, Medio, R, Der),
+    Area <span class="k">is</span> Izq + Der.</pre>
+<p class="dimt">Es la misma aditividad del intervalo, escrita como tres cláusulas: el caso vacío, la hoja y la partición.</p>
+
+<h2>8. Cuándo sirve y cuándo no</h2>
+<table>
+  <tr><th>Operación</th><th>Arreglo plano</th><th>Árbol de segmentos</th></tr>
+  <tr><td>Construir</td><td>—</td><td>O(n)</td></tr>
+  <tr><td>Área total</td><td>O(n)</td><td>O(1) — es la raíz</td></tr>
+  <tr><td>Área de un tramo</td><td>O(n)</td><td>O(log n)</td></tr>
+  <tr><td>Cambiar una columna</td><td>O(1)</td><td>O(log n)</td></tr>
+  <tr><td>Cambiar y volver a pedir el total</td><td>O(n)</td><td>O(log n)</td></tr>
+  <tr><td>Memoria</td><td>n</td><td>2n</td></tr>
+</table>
+
+<p><strong>No lo uses</strong> si solo quieres el área total una vez: construir el árbol cuesta O(n), igual que sumar el arreglo, y encima gastas el doble de memoria. La estructura se paga sola cuando hay <em>muchas consultas de tramo</em> o <em>actualizaciones intercaladas</em>.</p>
+<p>Si hay muchas consultas pero <em>nunca</em> se modifica nada, hay algo más simple que gana: la <span class="cy">suma de prefijos</span> S[k] = f(0)+…+f(k−1), que responde cualquier tramo en O(1) con una resta, S[r] − S[l]. El árbol vale la pena justamente cuando <em>además</em> hay que actualizar — ahí la suma de prefijos se cae, porque cambiar una columna obliga a recalcular todo el resto.</p>
+<div class="note">La suma de prefijos, dicho sea de paso, es la <em>función de área acumulada</em> A(x). Es la misma A(x) de la que sale A′(x) = f(x). El teorema fundamental del cálculo, en versión discreta, es una tabla de sumas parciales.</div>
+
+<h2>9. Preguntas para pensar</h2>
+<ul>
+  <li>Si en cada nodo, además de la suma, guardas el <span class="cy">máximo</span> de su intervalo — ¿qué preguntas nuevas puedes responder en O(log n)?</li>
+  <li>El árbol supone n potencia de 2 para quedar perfecto. ¿Qué pasa con n = 567, el ancho real de la imagen? ¿Rellenar con ceros, o permitir intervalos desiguales?</li>
+  <li>La suma de un nodo es exacta. Su <em>rectángulo</em> no. ¿Cómo medirías, dentro de un nodo, cuánta forma se está perdiendo — y usarías eso como criterio de poda?</li>
+  <li>Si la operación no fuera sumar sino <span class="ye">multiplicar</span>, ¿seguiría funcionando la estructura? ¿Qué necesita cumplir la operación para que un árbol de segmentos sea válido?</li>
+</ul>
+
+<div class="rule"></div>
+<p class="foot">Cada nodo es una jarra parcial · el árbol es la integral guardada por pedazos</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+const M=[3,5,6,8,9,9,8,6], N=M.length, TOTAL=M.reduce((a,b)=>a+b,0);
+const CH='#f0f4e8', DIM='rgba(240,244,232,.55)', FAINT='rgba(240,244,232,.22)',
+      YE='#f4d06f', CY='#9adcd8', SA='#ef9a80', VI='#c9a7e8';
+
+/* ---------- construir el árbol ---------- */
+function build(a,b){                       // intervalo [a,b)
+  if(b-a===1) return {a,b,sum:M[a],leaf:true};
+  const m=(a+b)>>1, i=build(a,m), d=build(m,b);
+  return {a,b,sum:i.sum+d.sum,izq:i,der:d,leaf:false};
+}
+const ROOT=build(0,N);
+const DEPTH=Math.log2(N);                  // 3 niveles internos + hojas
+
+function nodesAtLevel(lv){                 // lista de nodos a profundidad lv
+  const out=[];
+  (function walk(n,d){ if(d===lv){out.push(n);return;} if(!n.leaf){walk(n.izq,d+1);walk(n.der,d+1);} })(ROOT,0);
+  return out;
+}
+
+/* ---------- helpers SVG ---------- */
+const NS='http://www.w3.org/2000/svg';
+function svg(w,h){
+  const s=document.createElementNS(NS,'svg');
+  s.setAttribute('viewBox',`0 0 ${w} ${h}`); s.setAttribute('xmlns',NS);
+  return s;
+}
+function el(tag,attrs,parent){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent,x,y,s,{fill=CH,size=15,anchor='middle',family="'Caveat',cursive",weight=500,op=1}={}){
+  const t=el('text',{x,y,fill,'font-size':size,'text-anchor':anchor,'font-family':family,'font-weight':weight,'opacity':op},parent);
+  t.textContent=s; return t;
+}
+
+/* ---------- Figura 1: construcción paso a paso ---------- */
+const BW=700, PITCH=68, X0=110, UNIT=16, BASE=210;
+const CX=i=>X0+i*PITCH;
+const NARR=[
+  'La imagen binaria. Cada columna es una franja de un píxel de ancho; su altura es la cantidad de celdas negras apiladas desde la base. Esto es exactamente una suma de Riemann con Δx = 1, dibujada.',
+  'Contamos cada columna por separado. La columna x = 0 tiene 3 celdas, la x = 1 tiene 5, y así hasta la última. Cada conteo es un valor de la función: <span class="cy">f(x)</span>.',
+  'Guardamos esos conteos en un arreglo unidimensional. <span class="cy">M[x] = f(x)</span> — una casilla por columna, un entero en cada casilla. La imagen bidimensional quedó colapsada a una sola dimensión.',
+  'Cada casilla del arreglo se vuelve una <span class="ye">hoja</span> del árbol. Una hoja cubre el intervalo [x, x+1): es el área de una sola columna, el pedazo más pequeño que podemos preguntar.',
+  'Primer emparejamiento: cada par de hojas vecinas se junta y el padre guarda la <span class="ye">suma</span> de los dos. <span class="dimt">3+5=8 · 6+8=14 · 9+9=18 · 8+6=14</span>. Cada nodo nuevo es el área de dos columnas.',
+  'Segundo emparejamiento, misma regla. <span class="dimt">8+14=22 · 18+14=32</span>. Ahora cada nodo cubre cuatro columnas — ya son integrales parciales de tramos grandes.',
+  'La <span class="ye">raíz</span> junta las dos mitades: <span class="dimt">22+32=54</span>. Ese número es el área total. Y no hubo que sumar las ocho columnas al final: ya venía sumada desde abajo.'
+];
+function drawBuild(step){
+  const s=svg(BW,600);
+  const maxV=Math.max(...M);
+
+  // --- la imagen con sus rectángulos ---
+  M.forEach((v,i)=>{
+    const h=v*UNIT, x=CX(i)-30;
+    el('rect',{x,y:BASE-h,width:60,height:h,
+      fill:'rgba(244,208,111,.22)',stroke:YE,'stroke-width':1.4},s);
+    // rejilla de celdas
+    for(let k=1;k<v;k++) el('line',{x1:x,y1:BASE-k*UNIT,x2:x+60,y2:BASE-k*UNIT,
+      stroke:'rgba(244,208,111,.35)','stroke-width':.7},s);
+    if(step>=1) txt(s,CX(i),BASE-h-9,String(v),{fill:step>=2?DIM:CY,size:19});
+  });
+  // curva por encima
+  let d='';
+  M.forEach((v,i)=>{ d+=(i?' L ':'M ')+(CX(i)-30)+' '+(BASE-v*UNIT)+' L '+(CX(i)+30)+' '+(BASE-v*UNIT); });
+  el('path',{d,fill:'none',stroke:CH,'stroke-width':2,opacity:.85},s);
+  el('line',{x1:X0-44,y1:BASE,x2:CX(N-1)+44,y2:BASE,stroke:CH,'stroke-width':1.6},s);
+  M.forEach((v,i)=>txt(s,CX(i),BASE+18,'x='+i,{fill:DIM,size:14,family:"'Patrick Hand',sans-serif"}));
+  txt(s,BW/2,34,'la imagen: una columna de celdas por cada x',{fill:DIM,size:16,family:"'Patrick Hand',sans-serif"});
+
+  // --- el vector ---
+  if(step>=2){
+    M.forEach((v,i)=>{
+      el('rect',{x:CX(i)-30,y:246,width:60,height:36,rx:3,
+        fill:'rgba(154,220,216,.12)',stroke:CY,'stroke-width':1.5},s);
+      txt(s,CX(i),270,String(v),{fill:CY,size:21});
+      el('line',{x1:CX(i),y1:BASE+26,x2:CX(i),y2:244,stroke:FAINT,'stroke-width':1,
+        'stroke-dasharray':'3 4'},s);
+    });
+    txt(s,X0-70,270,'M',{fill:CY,size:24,anchor:'middle'});
+  }
+
+  // --- el árbol, creciendo hacia abajo ---
+  const LY=[318,388,458,528];                 // hojas, 4 nodos, 2 nodos, raíz
+  const levels=[
+    M.map((v,i)=>({a:i,b:i+1,sum:v})),
+    [0,1,2,3].map(k=>({a:2*k,b:2*k+2,sum:M[2*k]+M[2*k+1]})),
+    [0,1].map(k=>({a:4*k,b:4*k+4,sum:M.slice(4*k,4*k+4).reduce((x,y)=>x+y,0)})),
+    [{a:0,b:N,sum:TOTAL}]
+  ];
+  const center=n=>(CX(n.a)+CX(n.b-1))/2;
+  for(let L=0; L<4; L++){
+    if(step < 3+L) break;
+    const nuevo = (step===3+L);
+    levels[L].forEach(n=>{
+      const w=Math.max(56,(n.b-n.a)*PITCH-16), cx=center(n), cy=LY[L];
+      const col = nuevo?YE:CH;
+      if(L>0){                                  // aristas hacia los hijos de arriba
+        const hijos=levels[L-1].filter(c=>c.a>=n.a&&c.b<=n.b);
+        hijos.forEach(c=>el('line',{x1:center(c),y1:LY[L-1]+17,x2:cx,y2:cy-17,
+          stroke:nuevo?YE:FAINT,'stroke-width':nuevo?1.8:1.1,opacity:nuevo?.9:.6},s));
+      } else if(step>=3){
+        el('line',{x1:cx,y1:282,x2:cx,y2:cy-17,stroke:nuevo?YE:FAINT,'stroke-width':1.2,
+          'stroke-dasharray':'3 4'},s);
+      }
+      el('rect',{x:cx-w/2,y:cy-17,width:w,height:34,rx:4,
+        fill:nuevo?'rgba(244,208,111,.18)':'rgba(255,255,255,.04)',
+        stroke:col,'stroke-width':nuevo?1.9:1.1,opacity:nuevo?1:.8},s);
+      txt(s,cx,cy+2,String(n.sum),{fill:col,size:21});
+      txt(s,cx,cy+30,`[${n.a},${n.b})`,{fill:nuevo?col:DIM,size:13,
+        family:"'Patrick Hand',sans-serif",op:nuevo?.95:.55});
+    });
+  }
+  if(step>=6) txt(s,BW/2,578,'la raíz es el área total: 54 celdas',{fill:YE,size:20});
+
+  const f=document.getElementById('figBuild');
+  f.innerHTML=''; f.appendChild(s);
+  document.getElementById('bStep').textContent=step;
+  document.getElementById('bNarr').innerHTML=NARR[step];
+}
+let bStep=0;
+function setStep(k){ bStep=Math.max(0,Math.min(6,k)); drawBuild(bStep); }
+document.getElementById('bNext').addEventListener('click',()=>setStep(bStep+1));
+document.getElementById('bPrev').addEventListener('click',()=>setStep(bStep-1));
+document.getElementById('bReset').addEventListener('click',()=>setStep(0));
+setStep(0);
+
+/* ---------- Figura 1 y 3 y 4: el árbol ---------- */
+const TW=980, LEVELH=86, NODEW=74, NODEH=34;
+function nodePos(n,lv){
+  const x = TW*((n.a+n.b)/2)/N + 30;
+  const y = 26 + lv*LEVELH;
+  return {x,y};
+}
+function drawTree(target,{highlight={},showRange=null,caption=true}={}){
+  const H = 26 + DEPTH*LEVELH + 108;
+  const s = svg(TW+60, H);
+  // aristas primero
+  (function edges(n,lv){
+    if(n.leaf) return;
+    const p=nodePos(n,lv);
+    [n.izq,n.der].forEach(c=>{
+      const q=nodePos(c,lv+1);
+      const key=c.a+'-'+c.b, hl=highlight[key];
+      el('line',{x1:p.x,y1:p.y+NODEH/2,x2:q.x,y2:q.y-NODEH/2,
+        stroke: hl==='use'?YE : hl==='visit'?CY : FAINT,
+        'stroke-width': hl?1.8:1.2, opacity: hl?.9:.6},s);
+      edges(c,lv+1);
+    });
+  })(ROOT,0);
+  // nodos
+  (function nodes(n,lv){
+    const p=nodePos(n,lv), key=n.a+'-'+n.b, hl=highlight[key];
+    const col = hl==='use'?YE : hl==='visit'?CY : hl==='path'?VI : CH;
+    const w = n.leaf? 40 : NODEW;
+    el('rect',{x:p.x-w/2,y:p.y-NODEH/2,width:w,height:NODEH,rx:4,
+      fill: hl==='use'?'rgba(244,208,111,.18)' : hl==='path'?'rgba(201,167,232,.16)' : 'rgba(255,255,255,.04)',
+      stroke:col,'stroke-width':hl?1.9:1.1,opacity:hl?1:.75},s);
+    txt(s,p.x,p.y+2,String(n.sum),{fill:col,size:21});
+    txt(s,p.x,p.y+NODEH/2+15,n.leaf?`x=${n.a}`:`[${n.a},${n.b})`,
+        {fill:hl?col:DIM,size:14,family:"'Patrick Hand',sans-serif",op:hl?.95:.6});
+    if(!n.leaf){ nodes(n.izq,lv+1); nodes(n.der,lv+1); }
+  })(ROOT,0);
+  // barras de M abajo
+  const baseY = 26 + DEPTH*LEVELH + 74;
+  const maxH=Math.max(...M);
+  M.forEach((v,i)=>{
+    const x = TW*(i+0.5)/N + 30, w=TW/N-14, h=26*v/maxH;
+    const inRange = showRange && i>=showRange[0] && i<showRange[1];
+    el('rect',{x:x-w/2,y:baseY-h,width:w,height:h,
+      fill: inRange?'rgba(244,208,111,.5)':'rgba(240,244,232,.16)',
+      stroke: inRange?YE:FAINT,'stroke-width':1},s);
+  });
+  el('line',{x1:30,y1:baseY,x2:TW+30,y2:baseY,stroke:FAINT,'stroke-width':1},s);
+  txt(s,30+TW/2,baseY+22,'M[x] — las hojas del árbol son las columnas de la imagen',
+      {fill:DIM,size:15,family:"'Patrick Hand',sans-serif"});
+  target.innerHTML=''; target.appendChild(s);
+}
+drawTree(document.getElementById('figTree'));
+
+/* ---------- Figura 2: niveles como Riemann ---------- */
+function drawLevels(lv){
+  const W=980,H=250,PAD=34, baseY=H-42;
+  const s=svg(W,H);
+  const maxH=Math.max(...M)*1.15;
+  const X=i=>PAD+(W-2*PAD)*i/N, Y=v=>baseY-(baseY-24)*v/maxH;
+  // curva real (perfil escalonado de M)
+  let d=`M ${X(0)} ${Y(M[0])}`;
+  M.forEach((v,i)=>{ d+=` L ${X(i)} ${Y(v)} L ${X(i+1)} ${Y(v)}`; });
+  // rectángulos del nivel
+  const nodes=nodesAtLevel(lv);
+  nodes.forEach(n=>{
+    const w=n.b-n.a, prom=n.sum/w;
+    el('rect',{x:X(n.a),y:Y(prom),width:X(n.b)-X(n.a),height:baseY-Y(prom),
+      fill:'rgba(244,208,111,.20)',stroke:YE,'stroke-width':1.6},s);
+    if(w>1) txt(s,(X(n.a)+X(n.b))/2,Y(prom)-9,`${n.sum}`,{fill:YE,size:19});
+  });
+  el('path',{d,fill:'none',stroke:CH,'stroke-width':2,opacity:.9},s);
+  el('line',{x1:PAD-8,y1:baseY,x2:W-PAD+8,y2:baseY,stroke:CH,'stroke-width':1.6},s);
+  txt(s,W/2,H-14,`nivel ${lv} · ${nodes.length} rectángulo${nodes.length>1?'s':''} · Δx = ${N/nodes.length}`,
+      {fill:DIM,size:16,family:"'Patrick Hand',sans-serif"});
+  document.getElementById('figLevels').innerHTML='';
+  document.getElementById('figLevels').appendChild(s);
+  // "error de forma": desviación media entre el promedio del nodo y las columnas reales
+  let err=0;
+  nodes.forEach(n=>{ const prom=n.sum/(n.b-n.a);
+    for(let i=n.a;i<n.b;i++) err+=Math.abs(M[i]-prom); });
+  document.getElementById('lvlV').textContent=lv;
+  document.getElementById('rectV').textContent=nodes.length;
+  document.getElementById('dxV').textContent=N/nodes.length;
+  document.getElementById('areaV').textContent=nodes.reduce((a,n)=>a+n.sum,0);
+  document.getElementById('errV').textContent=(err/N).toFixed(2);
+}
+document.getElementById('lvl').addEventListener('input',e=>drawLevels(+e.target.value));
+drawLevels(1);
+
+/* ---------- Figura 3: consulta de rango ---------- */
+function query(l,r){
+  const hl={}; let usados=0, suma=0;
+  (function go(n){
+    if(n.b<=l || r<=n.a) return;            // disjunto
+    if(l<=n.a && n.b<=r){ hl[n.a+'-'+n.b]='use'; usados++; suma+=n.sum; return; }
+    hl[n.a+'-'+n.b]='visit';
+    if(!n.leaf){ go(n.izq); go(n.der); }
+  })(ROOT);
+  return {hl,usados,suma};
+}
+function refreshQuery(){
+  let l=+document.getElementById('ql').value, r=+document.getElementById('qr').value;
+  if(r<=l){ r=l+1; document.getElementById('qr').value=r; }
+  const q=query(l,r);
+  document.getElementById('qlV').textContent=l;
+  document.getElementById('qrV').textContent=r;
+  document.getElementById('qArea').textContent=q.suma;
+  document.getElementById('qNodes').textContent=q.usados;
+  document.getElementById('qCols').textContent=r-l;
+  drawTree(document.getElementById('figQuery'),{highlight:q.hl,showRange:[l,r]});
+}
+document.getElementById('ql').addEventListener('input',refreshQuery);
+document.getElementById('qr').addEventListener('input',refreshQuery);
+refreshQuery();
+
+/* ---------- Figura 4: actualización ---------- */
+function refreshUpdate(){
+  const x=+document.getElementById('upd').value;
+  const hl={}; let cuenta=0;
+  (function go(n){
+    if(x<n.a || x>=n.b) return;
+    hl[n.a+'-'+n.b]='path'; cuenta++;
+    if(!n.leaf){ go(n.izq); go(n.der); }
+  })(ROOT);
+  document.getElementById('updV').textContent=x;
+  document.getElementById('updN').textContent=cuenta;
+  drawTree(document.getElementById('figUpdate'),{highlight:hl,showRange:[x,x+1]});
+}
+document.getElementById('upd').addEventListener('input',refreshUpdate);
+refreshUpdate();
+})();
+</script>
+</body>
+</html>
